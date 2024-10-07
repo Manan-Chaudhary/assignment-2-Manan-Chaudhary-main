@@ -1,0 +1,40 @@
+  ADDR  |  HEX  |      BINARY      |  LN  |  ASSEMBLY
+        |       |                  |    1 | 
+        |       |                  |    2 | .ORIG x3000
+ x3000  | xF029 | 1111000000101001 |    3 | TRAP x29                      ; Get player's current position
+        |       |                  |    4 | 
+ x3001  | x5DA0 | 0101110110100000 |    5 | AND R6, R6, #0                ; Clear register
+ x3002  | x5B60 | 0101101101100000 |    6 | AND R5 , R5 , #0
+ x3003  | x1DA1 | 0001110110100001 |    7 | ADD R6 , R6 , #1
+ x3004  | x2813 | 0010100000010011 |    8 | LD R4 , NUM                   ; Load the bit count (16 bits)
+        |       |                  |    9 | 
+        |       |                  |   10 | LOOP                          ; Start loop
+ x3005  | x5B60 | 0101101101100000 |   11 | AND R5 , R5 , #0
+ x3006  | x2A0E | 0010101000001110 |   12 | LD R5 , NUMBER_TO_CONVERT      ; Load number to convert
+ x3007  | x5B46 | 0101101101000110 |   13 | AND R5 , R5 , R6               ; Bitwise comparison (check the current bit)
+ x3008  | x0A04 | 0000101000000100 |   14 | BRnp ONE
+        |       |                  |   15 | 
+ x3009  | x1021 | 0001000000100001 |   16 | ADD R0 , R0 , #1              ; Move to next position in z direction
+ x300A  | x260B | 0010011000001011 |   17 | LD R3 , BLOCK_1               ; Load block ID for air (or 0)
+ x300B  | xF02C | 1111000000101100 |   18 | TRAP x2C                      ; Place air block at (R0, R1, R2)
+ x300C  | x0E03 | 0000111000000011 |   19 | BR CLOSE
+        |       |                  |   20 | 
+        |       |                  |   21 | ONE    
+ x300D  | x1021 | 0001000000100001 |   22 | ADD R0 , R0 , #1              ; Move to next position in z direction
+ x300E  | x2608 | 0010011000001000 |   23 | LD R3 , BLOCK_2               ; Load block ID for stone (or 1)
+ x300F  | xF02C | 1111000000101100 |   24 | TRAP x2C                      ; Place stone block at (R0, R1, R2)
+        |       |                  |   25 | 
+        |       |                  |   26 | CLOSE
+        |       |                  |   27 | 
+ x3010  | x56E0 | 0101011011100000 |   28 | AND R3 , R3 , #0              ; Clear R3
+ x3011  | x1D86 | 0001110110000110 |   29 | ADD R6 , R6 , R6              ; Shift bit to the next position
+ x3012  | x193F | 0001100100111111 |   30 | ADD R4 , R4 , #-1             ; Decrement bit count
+ x3013  | x03F1 | 0000001111110001 |   31 | BRp LOOP                      ; Repeat the loop until all bits are processed
+        |       |                  |   32 | 
+ x3014  | xF025 | 1111000000100101 |   33 | HALT
+ x3015  | x00ED | 0000000011101101 |   34 | NUMBER_TO_CONVERT .FILL #237
+ x3016  | x0000 | 0000000000000000 |   35 | BLOCK_1 .FILL #0              ; Block ID for air
+ x3017  | x0001 | 0000000000000001 |   36 | BLOCK_2 .FILL #1              ; Block ID for stone
+ x3018  | x0010 | 0000000000010000 |   37 | NUM .FILL #16                 ; Number of bits to process
+        |       |                  |   38 | 
+        |       |                  |   39 | .END
