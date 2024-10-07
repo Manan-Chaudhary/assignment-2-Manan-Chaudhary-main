@@ -1,4 +1,7 @@
-PLACE_BLOCKS                                                               x3005
-BLOCK_ID_14                                                                x300B
-BLOCK_ID_OFFSET                                                            x300C
-HEIGHT                                                                     x300D
+OUTER_LOOP                                                                 x3004
+INNER_LOOP                                                                 x3005
+BUILD_BLOCK                                                                x300D
+CONTINUE_Z                                                                 x300F
+TEST_BLOCK_ID                                                              x3016
+AIR_BLOCK_ID                                                               x3017
+TARGET_HEIGHT                                                              x3018

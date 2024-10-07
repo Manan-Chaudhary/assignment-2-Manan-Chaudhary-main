@@ -1,30 +1,43 @@
   ADDR  |  HEX  |      BINARY      |  LN  |  ASSEMBLY
         |       |                  |    1 | .ORIG x3000
         |       |                  |    2 | 
- x3000  | xF029 | 1111000000101001 |    3 | TRAP x29               ; Get player's current position (R0 -> x, R1 -> y, R2 -> z)
- x3001  | x1022 | 0001000000100010 |    4 | ADD R0, R0, #2         ; Move 2 blocks ahead in x-direction
- x3002  | x280A | 0010100000001010 |    5 | LD R4, HEIGHT          ; Load the height constant (height = 5 blocks for the totem pole)
-        |       |                  |    6 | 
-        |       |                  |    7 | ; Block IDs to place (in an array-like structure)
- x3003  | x2C07 | 0010110000000111 |    8 | LD R6, BLOCK_ID_14     ; Start with Block ID 14 (first block)
- x3004  | x2E07 | 0010111000000111 |    9 | LD R7, BLOCK_ID_OFFSET ; Initialize block ID offset
+ x3000  | xF029 | 1111000000101001 |    3 | TRAP x29               ; GETP, result in R0 (x), R1 (y), R2 (z)
+ x3001  | x163F | 0001011000111111 |    4 | ADD R3, R0, #-1        ; Start loop with x-1 in R3
+ x3002  | x18BF | 0001100010111111 |    5 | ADD R4, R2, #-1        ; Start loop with z-1 in R4
+ x3003  | x2C14 | 0010110000010100 |    6 | LD R6, TARGET_HEIGHT   ; Load target height into R6
+        |       |                  |    7 | 
+        |       |                  |    8 | OUTER_LOOP
+ x3004  | x1B20 | 0001101100100000 |    9 |     ADD R5, R4, #0     ; Reset z to z-1 for each row (z stored in R5)
         |       |                  |   10 | 
-        |       |                  |   11 | ; Loop to place the blocks from ID #14 to ID #18, incrementing y position
-        |       |                  |   12 | PLACE_BLOCKS
- x3005  | xF02C | 1111000000101100 |   13 |     TRAP x2C             ; Place block at (R0, R1, R2) with the current block ID in R3
- x3006  | x1261 | 0001001001100001 |   14 |     ADD R1, R1, #1       ; Move up one block (y+1)
-        |       |                  |   15 |     
-        |       |                  |   16 |     ; Update block ID for the next block
- x3007  | x1DA1 | 0001110110100001 |   17 |     ADD R6, R6, #1       ; Move to the next block ID (14 -> 15 -> 16 -> 17 -> 18)
+        |       |                  |   11 | INNER_LOOP
+ x3005  | xF02D | 1111000000101101 |   12 |     TRAP x2D           ; GETH, result in R1 (current block height)
+        |       |                  |   13 |     
+ x3006  | x9FBF | 1001111110111111 |   14 |     NOT R7, R6         ; Subtract target height from current height
+ x3007  | x1FE1 | 0001111111100001 |   15 |     ADD R7, R7, #1     ; Complete two's complement subtraction
+ x3008  | x1E47 | 0001111001000111 |   16 |     ADD R7, R1, R7     ; R7 = current block height - target height
+ x3009  | x0603 | 0000011000000011 |   17 |     BRzp BUILD_BLOCK   ; If height < target, add block
         |       |                  |   18 | 
- x3008  | x193F | 0001100100111111 |   19 |     ADD R4, R4, #-1      ; Decrease height counter
- x3009  | x03FB | 0000001111111011 |   20 |     BRp PLACE_BLOCKS     ; Continue loop if more blocks need to be placed
-        |       |                  |   21 | 
- x300A  | xF025 | 1111000000100101 |   22 |     HALT
-        |       |                  |   23 | 
-        |       |                  |   24 | ; Data Section
- x300B  | x000E | 0000000000001110 |   25 | BLOCK_ID_14     .FILL #14  ; Block ID for block type 14
- x300C  | x0001 | 0000000000000001 |   26 | BLOCK_ID_OFFSET .FILL #1   ; Offset between block IDs (14, 15, 16, 17, 18)
- x300D  | x0005 | 0000000000000101 |   27 | HEIGHT          .FILL #5   ; Target height for totem pole
-        |       |                  |   28 | 
-        |       |                  |   29 | .END
+ x300A  | x2E0C | 0010111000001100 |   19 |     LD R7, AIR_BLOCK_ID ; Load air block ID (0) into R7
+ x300B  | xF02C | 1111000000101100 |   20 |     TRAP x2C            ; SETB, place air block at (R3, R1, R5)
+ x300C  | x0E02 | 0000111000000010 |   21 |     BR CONTINUE_Z       ; Continue to next block
+        |       |                  |   22 | 
+        |       |                  |   23 | BUILD_BLOCK
+ x300D  | x2E08 | 0010111000001000 |   24 |     LD R7, TEST_BLOCK_ID ; Load test block ID
+ x300E  | xF02C | 1111000000101100 |   25 |     TRAP x2C             ; SETB, place test block
+        |       |                  |   26 | 
+        |       |                  |   27 | CONTINUE_Z
+ x300F  | x1B61 | 0001101101100001 |   28 |     ADD R5, R5, #1      ; Move to next z position
+ x3010  | x1F7D | 0001111101111101 |   29 |     ADD R7, R5, #-3     ; Check if all z positions are processed
+ x3011  | x09F3 | 0000100111110011 |   30 |     BRn INNER_LOOP      ; Loop through z
+        |       |                  |   31 | 
+ x3012  | x16E1 | 0001011011100001 |   32 |     ADD R3, R3, #1      ; Continue loop for next x
+ x3013  | x1EFD | 0001111011111101 |   33 |     ADD R7, R3, #-3     ; Check if all x positions are processed
+ x3014  | x09EF | 0000100111101111 |   34 |     BRn OUTER_LOOP      ; Loop through x
+        |       |                  |   35 | 
+ x3015  | xF025 | 1111000000100101 |   36 | HALT
+        |       |                  |   37 | 
+ x3016  | x0001 | 0000000000000001 |   38 | TEST_BLOCK_ID .FILL #1   ; Try different block IDs (1 for stone, 2 for grass, etc.)
+ x3017  | x0000 | 0000000000000000 |   39 | AIR_BLOCK_ID  .FILL #0   ; Block ID for air
+ x3018  | x0005 | 0000000000000101 |   40 | TARGET_HEIGHT .FILL #5   ; Target height
+        |       |                  |   41 | 
+        |       |                  |   42 | .END
